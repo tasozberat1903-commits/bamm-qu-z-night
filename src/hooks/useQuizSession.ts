@@ -17,18 +17,26 @@ export function useQuizSession() {
     const unsubSession = onSnapshot(sessionDoc, (snapshot) => {
       if (snapshot.exists()) {
         setState(snapshot.data() as QuizState);
+        setLoading(false);
       } else {
         // Initialize if not exists
         const initialState: QuizState = {
           currentQuestionIndex: 0,
           status: 'waiting',
-          participants: [], // we use a subcollection for real updates
+          participants: [],
           totalQuestions: QUIZ_QUESTIONS.length
         };
-        setDoc(sessionDoc, initialState).catch(e => handleFirestoreError(e, OperationType.WRITE, 'quiz_sessions'));
+        setDoc(sessionDoc, initialState)
+          .then(() => setLoading(false))
+          .catch(e => {
+            console.error("Session Init Error:", e);
+            handleFirestoreError(e, OperationType.WRITE, 'quiz_sessions');
+          });
       }
-      setLoading(false);
-    }, (error) => handleFirestoreError(error, OperationType.GET, 'quiz_sessions'));
+    }, (error) => {
+      console.error("Snapshot Error:", error);
+      handleFirestoreError(error, OperationType.GET, 'quiz_sessions');
+    });
 
     const participantsCol = collection(db, 'quiz_sessions', SESSION_ID, 'participants');
     const q = query(participantsCol, orderBy('score', 'desc'));

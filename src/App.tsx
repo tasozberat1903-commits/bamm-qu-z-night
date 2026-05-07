@@ -10,18 +10,43 @@ import { Monitor, Smartphone, LayoutDashboard } from 'lucide-react';
 export default function App() {
   const [view, setView] = useState<'tv' | 'mobile' | 'admin'>('tv');
   const [user, setUser] = useState<User | null>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
   const { state, participants, loading, updateSession, joinSession } = useQuizSession();
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, (u) => {
       if (!u) {
-        signInAnonymously(auth).catch(console.error);
+        signInAnonymously(auth).catch((error) => {
+          console.error("Auth Error:", error);
+          setAuthError(error.message);
+        });
       } else {
         setUser(u);
+        setAuthError(null);
       }
     });
     return () => unsub();
   }, []);
+
+  if (authError) {
+    return (
+      <div className="min-h-screen bg-dark-bg flex flex-col items-center justify-center p-6 text-center">
+        <div className="w-20 h-20 bg-red-500/20 rounded-full flex items-center justify-center mb-6">
+          <Smartphone className="w-10 h-10 text-red-500" />
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Bağlantı Hatası</h2>
+        <p className="text-white/40 text-sm mb-8 max-w-xs">
+          Firebase anonim giriş yapılamadı. Lütfen Firebase Console'dan 'Anonymous Auth' özelliğinin açık olduğundan emin olun.
+        </p>
+        <code className="bg-black/40 p-4 rounded-xl text-xs text-red-400 font-mono mb-8 block w-full overflow-x-auto">
+          {authError}
+        </code>
+        <button onClick={() => window.location.reload()} className="px-8 py-3 bg-white text-black rounded-xl font-bold">
+          TEKRAR DENE
+        </button>
+      </div>
+    );
+  }
 
   if (loading || !state || !user) {
     return (
