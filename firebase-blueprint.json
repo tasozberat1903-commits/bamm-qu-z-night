@@ -1,0 +1,40 @@
+{
+  "entities": {
+    "QuizSession": {
+      "title": "Quiz Session",
+      "description": "Represents a live quiz session's state.",
+      "type": "object",
+      "properties": {
+        "currentQuestionIndex": { "type": "number" },
+        "status": { "type": "string", "enum": ["waiting", "active", "results", "ended"] },
+        "totalQuestions": { "type": "number" },
+        "lastUpdated": { "type": "string", "format": "date-time" }
+      },
+      "required": ["currentQuestionIndex", "status", "totalQuestions"]
+    },
+    "Participant": {
+      "title": "Participant",
+      "description": "A user participating in a quiz session.",
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "tableNumber": { "type": "string" },
+        "score": { "type": "number" },
+        "lastAnswer": { "type": "string" },
+        "isCorrect": { "type": "boolean" },
+        "joinedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["name", "tableNumber", "score"]
+    }
+  },
+  "firestore": {
+    "/quiz_sessions/{sessionId}": {
+      "schema": "QuizSession",
+      "description": "Active quiz sessions."
+    },
+    "/quiz_sessions/{sessionId}/participants/{participantId}": {
+      "schema": "Participant",
+      "description": "Participants in a specific session."
+    }
+  }
+}

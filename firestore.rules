@@ -1,0 +1,53 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Default deny
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    // Session validation
+    function isValidSession(data) {
+      return data.currentQuestionIndex is number 
+          && data.status in ['waiting', 'active', 'results', 'ended']
+          && data.totalQuestions is number 
+          && data.totalQuestions <= 50;
+    }
+
+    // Participant validation
+    function isValidParticipant(data) {
+      return data.name is string && data.name.size() > 0 && data.name.size() <= 64
+          && data.tableNumber is string && data.tableNumber.size() > 0 && data.tableNumber.size() <= 10
+          && data.score is number
+          && (data.get('lastAnswer', null) == null || data.lastAnswer is string)
+          && (data.get('isCorrect', null) == null || data.isCorrect is bool);
+    }
+
+    match /quiz_sessions/{sessionId} {
+      allow read: if true; 
+      allow create, update: if isSignedIn(); 
+      
+      match /participants/{participantId} {
+        allow read: if true;
+        allow create, update: if isSignedIn() && request.auth.uid == participantId && isValidParticipant(incoming());
+      }
+    }
+  }
+}
